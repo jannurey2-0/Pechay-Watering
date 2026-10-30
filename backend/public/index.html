@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#0a120d">
+  <title>Pechay Monitor</title>
+  <link rel="stylesheet" href="style.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+</head>
+<body>
+<div class="glow glow-sun" aria-hidden="true"></div>
+<div class="glow glow-leaf" aria-hidden="true"></div>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <g id="i-leaf" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M11 20A7 7 0 0 1 4 13C4 7 10 4 20 4c0 10-4 16-9 16Z"/><path d="M4.5 20.5C6 15.5 9 12 13.5 9.5"/>
+    </g>
+    <g id="i-drop" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M12 3.2s5.8 6 5.8 9.8a5.8 5.8 0 1 1-11.6 0C6.2 9.2 12 3.2 12 3.2Z"/>
+    </g>
+    <g id="i-temp" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M14 14.8V5a2 2 0 1 0-4 0v9.8a4 4 0 1 0 4 0Z"/><path d="M12 9v6.5"/>
+    </g>
+    <g id="i-sprout" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M12 21v-7.5"/><path d="M12 13.5C12 10.5 9.5 8 6.5 8H4v1.5C4 12.8 6.8 15.5 10 15.5h2"/>
+      <path d="M12 13.5c0-3.3 2.7-6 6-6h1.5V9c0 3.3-2.7 6-6 6H12"/>
+    </g>
+    <g id="i-chart" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M4 4v15a1 1 0 0 0 1 1h15"/><path d="M7.5 15.5 11 11l3 3 4.5-6.5"/>
+    </g>
+    <g id="i-list" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M4 6.5h16M4 12h16M4 17.5h10"/>
+    </g>
+    <g id="i-target" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+      <circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="3.2"/><path d="M12 1.8v3M12 19.2v3M1.8 12h3M19.2 12h3"/>
+    </g>
+  </defs>
+</svg>
+
+<header class="topbar">
+  <div class="brand">
+    <span class="brand-mark"><svg viewBox="0 0 24 24"><use href="#i-leaf"/></svg></span>
+    <span class="brand-text">
+      <b>Pechay Monitor</b>
+      <small>solar watering &amp; yield watch</small>
+    </span>
+  </div>
+
+  <div class="topbar-right">
+    <div class="pill pill-pump" id="pump-pill" data-state="idle">
+      <span class="pill-icon"><svg viewBox="0 0 24 24"><use href="#i-drop"/></svg></span>
+      <span id="pump-pill-text">pump idle</span>
+    </div>
+    <div class="pill pill-conn" id="conn-pill" data-state="wait">
+      <span class="dot"></span>
+      <span id="conn-status">connecting…</span>
+    </div>
+    <div class="pill pill-clock" title="Last data received from the ESP32">
+      <span id="clock">--:--</span><small id="ago"></small>
+    </div>
+  </div>
+</header>
+
+<main id="main" data-live="false">
+
+  <p class="group-label">The garden <span>soil moisture, one probe per pot</span></p>
+  <section class="grid pots">
+    <article class="card pot-card" id="pot-card-1" data-state="nodata">
+      <div class="pot-top">
+        <span class="pot-id"><i class="pot-dot"></i>Pot 1</span>
+        <span class="chip" id="pot1-state">no data</span>
+      </div>
+      <div class="pot-read">
+        <span class="pot-pct" id="moisture1">--</span><span class="pct-sign">%</span>
+        <span class="pot-opt">optimal 60–70%</span>
+      </div>
+      <div class="pot-rim"></div>
+      <div class="vessel">
+        <div class="vessel-band" title="Optimal band 60–70%"></div>
+        <div class="vessel-alert" title="Pump turns on below 30%"><span>30</span></div>
+        <div class="vessel-fill" id="moisture1-fill"><i class="waterline"></i></div>
+        <div class="drops" aria-hidden="true"><i></i><i></i><i></i></div>
+      </div>
+      <div class="pot-foot">
+        <span>YL-69 · GPIO34</span>
+        <span class="trend" id="pot1-trend"></span>
+      </div>
+    </article>
+
+    <article class="card pot-card" id="pot-card-2" data-state="nodata">
+      <div class="pot-top">
+        <span class="pot-id"><i class="pot-dot"></i>Pot 2</span>
+        <span class="chip" id="pot2-state">no data</span>
+      </div>
+      <div class="pot-read">
+        <span class="pot-pct" id="moisture2">--</span><span class="pct-sign">%</span>
+        <span class="pot-opt">optimal 60–70%</span>
+      </div>
+      <div class="pot-rim"></div>
+      <div class="vessel">
+        <div class="vessel-band" title="Optimal band 60–70%"></div>
+        <div class="vessel-alert" title="Pump turns on below 30%"><span>30</span></div>
+        <div class="vessel-fill" id="moisture2-fill"><i class="waterline"></i></div>
+        <div class="drops" aria-hidden="true"><i></i><i></i><i></i></div>
+      </div>
+      <div class="pot-foot">
+        <span>YL-69 · GPIO35</span>
+        <span class="trend" id="pot2-trend"></span>
+      </div>
+    </article>
+
+    <article class="card pot-card" id="pot-card-3" data-state="nodata">
+      <div class="pot-top">
+        <span class="pot-id"><i class="pot-dot"></i>Pot 3</span>
+        <span class="chip" id="pot3-state">no data</span>
+      </div>
+      <div class="pot-read">
+        <span class="pot-pct" id="moisture3">--</span><span class="pct-sign">%</span>
+        <span class="pot-opt">optimal 60–70%</span>
+      </div>
+      <div class="pot-rim"></div>
+      <div class="vessel">
+        <div class="vessel-band" title="Optimal band 60–70%"></div>
+        <div class="vessel-alert" title="Pump turns on below 30%"><span>30</span></div>
+        <div class="vessel-fill" id="moisture3-fill"><i class="waterline"></i></div>
+        <div class="drops" aria-hidden="true"><i></i><i></i><i></i></div>
+      </div>
+      <div class="pot-foot">
+        <span>YL-69 · GPIO36</span>
+        <span class="trend" id="pot3-trend"></span>
+      </div>
+    </article>
+  </section>
+
+  <p class="group-label">Conditions <span>air around the plants &amp; pump activity</span></p>
+  <section class="grid conditions">
+    <article class="card cond-card" id="temp-card" data-state="nodata">
+      <div class="cond-top">
+        <span class="cond-label"><svg viewBox="0 0 24 24"><use href="#i-temp"/></svg>Air temperature</span>
+        <span class="chip" id="temp-state">no data</span>
+      </div>
+      <div class="cond-read"><span id="temperature">--</span><span class="unit">°C</span></div>
+      <div class="bullet">
+        <div class="bullet-track">
+          <div class="bullet-band"></div>
+          <div class="bullet-mark" id="temp-mark"></div>
+        </div>
+        <div class="bullet-scale"><span>0°</span><span class="ideal-tag">ideal 18–22°</span><span>50°</span></div>
+      </div>
+      <p class="cond-note" id="temp-note">DHT11 · watering pauses in extreme heat</p>
+    </article>
+
+    <article class="card cond-card" id="hum-card" data-state="nodata">
+      <div class="cond-top">
+        <span class="cond-label"><svg viewBox="0 0 24 24"><use href="#i-drop"/></svg>Air humidity</span>
+        <span class="chip" id="hum-state">no data</span>
+      </div>
+      <div class="cond-read"><span id="humidity">--</span><span class="unit">%</span></div>
+      <div class="bullet">
+        <div class="bullet-track">
+          <div class="bullet-band"></div>
+          <div class="bullet-mark" id="hum-mark"></div>
+        </div>
+        <div class="bullet-scale"><span>0</span><span class="ideal-tag">ideal 60–80%</span><span>100</span></div>
+      </div>
+      <p class="cond-note" id="hum-note">DHT11 · very dry air stresses seedlings</p>
+    </article>
+
+    <article class="card pump-card" id="pump-card" data-state="idle">
+      <div class="cond-top">
+        <span class="cond-label"><svg viewBox="0 0 24 24"><use href="#i-drop"/></svg>Last watering</span>
+        <span class="chip" id="pump-chip">idle</span>
+      </div>
+      <div class="pump-read"><span id="last-watering">never</span></div>
+      <div class="pump-detail" id="last-watering-detail">no pump cycle recorded yet</div>
+      <div class="pump-meter">
+        <div class="pump-meter-row">
+          <span>before</span><b id="lw-before">--</b>
+        </div>
+        <div class="pump-arrow"><i class="gain" id="lw-gain"></i></div>
+        <div class="pump-meter-row">
+          <span>after</span><b id="lw-after">--</b>
+        </div>
+      </div>
+      <p class="cond-note">4 s per auto cycle · 10 min cooldown · driest pot first</p>
+    </article>
+
+    <article class="card manual-card" id="manual-card">
+      <div class="cond-top">
+        <span class="cond-label"><svg viewBox="0 0 24 24"><use href="#i-drop"/></svg>Manual override</span>
+        <span class="chip" id="manual-chip" data-state="good">ready</span>
+      </div>
+      <p class="manual-copy">Run the pump now, even when soil moisture is above the 30% auto-watering threshold.</p>
+      <div class="manual-controls">
+        <label class="manual-duration" for="manual-duration">
+          <span>Run time</span>
+          <select id="manual-duration" class="select">
+            <option value="4000" selected>4 s</option>
+            <option value="8000">8 s</option>
+            <option value="12000">12 s</option>
+          </select>
+        </label>
+        <button type="button" id="manual-water" class="btn-manual">Water now</button>
+      </div>
+      <p class="cond-note" id="manual-note">Skips the moisture check and cooldown. Extreme heat or humidity still blocks the pump.</p>
+    </article>
+  </section>
+
+  <p class="group-label">Growth <span>where the plants are in their 45-day cycle</span></p>
+  <section class="panel growth">
+    <div class="growth-body">
+      <div class="growth-now">
+        <span class="growth-icon"><svg viewBox="0 0 24 24"><use href="#i-sprout"/></svg></span>
+        <div class="growth-days"><b id="days">--</b><span>days since planting</span></div>
+        <div class="stage-name" id="stage">set the planting date</div>
+        <div class="harvest-count" id="harvest-count">—</div>
+      </div>
+
+      <div class="rail-wrap">
+        <div class="rail">
+          <div class="rail-fill" id="rail-fill"></div>
+          <div class="rail-marker" id="rail-marker"></div>
+        </div>
+        <ol class="stages" id="stages">
+          <li data-stage="germination"><b>Germination</b><span>day 1–7</span></li>
+          <li data-stage="seedling"><b>Seedling</b><span>day 8–14</span></li>
+          <li data-stage="vegetative"><b>Vegetative</b><span>day 15–29</span></li>
+          <li data-stage="maturity"><b>Harvest window</b><span>day 30–45</span></li>
+        </ol>
+      </div>
+
+      <form id="planting-form" class="planting">
+        <label for="planting-date">Planting date</label>
+        <div class="planting-row">
+          <input type="date" id="planting-date" required>
+          <button type="submit">Save</button>
+        </div>
+        <p class="hint">Day 1 is the day the seeds went in.</p>
+      </form>
+    </div>
+  </section>
+
+  <p class="group-label">Outlook <span>rule-based estimate, no black box</span></p>
+  <section class="panel yield">
+    <div class="panel-title">
+      <span class="pt-icon"><svg viewBox="0 0 24 24"><use href="#i-target"/></svg></span>
+      Yield prediction
+      <span class="chip chip-lg" id="yield-category">—</span>
+    </div>
+    <div class="yield-body">
+      <div class="ring" id="yield-ring" style="--pct:0">
+        <div class="ring-inner">
+          <b id="condition-index">--</b>
+          <span>% of optimal conditions</span>
+        </div>
+      </div>
+
+      <div class="yield-headline">
+        <div class="yield-number"><span id="yield-g">--</span><span class="unit">g per plant</span></div>
+        <div class="yield-meta"><span id="yield-stage">—</span> · <span id="yield-maturity">maturity —</span></div>
+        <p class="note" id="prediction-note"></p>
+      </div>
+
+      <div class="factors">
+        <div class="factor" data-kind="moisture">
+          <div class="factor-top"><span>Soil moisture</span><b id="score-moisture-num">--</b></div>
+          <div class="bar"><div class="bar-fill" id="score-moisture"></div></div>
+          <div class="factor-foot">avg <b id="avg-moisture">--</b>% · optimal 60–70% · weight 50%</div>
+        </div>
+        <div class="factor" data-kind="temp">
+          <div class="factor-top"><span>Temperature</span><b id="score-temp-num">--</b></div>
+          <div class="bar"><div class="bar-fill" id="score-temp"></div></div>
+          <div class="factor-foot">avg <b id="avg-temp">--</b>°C · optimal 18–22°C · weight 25%</div>
+        </div>
+        <div class="factor" data-kind="humidity">
+          <div class="factor-top"><span>Humidity</span><b id="score-humidity-num">--</b></div>
+          <div class="bar"><div class="bar-fill" id="score-humidity"></div></div>
+          <div class="factor-foot">avg <b id="avg-humidity">--</b>% · optimal 60–80% · weight 25%</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <p class="group-label">Trends <span>every reading the ESP32 has posted</span></p>
+  <section class="panel">
+    <div class="panel-title">
+      <span class="pt-icon"><svg viewBox="0 0 24 24"><use href="#i-chart"/></svg></span>
+      Sensor history
+      <select id="history-range" class="select">
+        <option value="1">Last 1 hour</option>
+        <option value="6" selected>Last 6 hours</option>
+        <option value="24">Last 24 hours</option>
+        <option value="72">Last 3 days</option>
+      </select>
+      <a id="export-csv" class="btn-export" href="/api/history.csv?hours=6" download>Export CSV</a>
+    </div>
+    <div class="chart-wrap"><canvas id="history-chart"></canvas></div>
+    <p class="panel-foot">Tap a legend item to hide or show a line. Moisture and humidity are %, temperature is °C — one shared 0–100 axis. Export CSV downloads every reading in the selected range with local and UTC timestamps.</p>
+  </section>
+
+  <section class="panel">
+    <div class="panel-title">
+      <span class="pt-icon"><svg viewBox="0 0 24 24"><use href="#i-list"/></svg></span>
+      Watering log
+      <span class="count-chip" id="log-count">0 events</span>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr><th>When</th><th>Pot</th><th>Pump</th><th>Before</th><th>After</th><th>Gain</th></tr>
+        </thead>
+        <tbody id="watering-log">
+          <tr class="empty"><td colspan="6">No watering events yet.</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <footer class="page-foot">
+    <span>Prototype · all data stays on this laptop</span>
+    <span>Auto-watering runs on the ESP32; manual cycles are queued from this page.</span>
+  </footer>
+</main>
+
+<script src="app.js"></script>
+</body>
+</html>

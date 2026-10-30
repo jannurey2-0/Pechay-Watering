@@ -1,0 +1,16 @@
+{
+  "name": "pechay-watering-backend",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Backend + dashboard for the IoT Pechay watering and yield prediction prototype",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "engines": {
+    "node": ">=22.12.0"
+  },
+  "dependencies": {
+    "express": "^4.21.2"
+  }
+}
